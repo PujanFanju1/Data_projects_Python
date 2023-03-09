@@ -1,0 +1,35 @@
+import pandas as pd
+data = pd.read_csv(r"C:\Users\44771\Desktop\CV\weather_data.csv")
+data.head()
+data.shape
+data.index
+data.columns
+data.dtypes #Show the data type of each column (Date/time is currently object so it needs to be converted).
+data['Weather'].unique() #Shows unique values of each column.
+data.nunique() #Number of unique values of each column.
+data.count() #Total number of non-nulls in each column.
+data['Weather'].value_counts() #Shows the unique values of a column and their counts.
+data.info() # shows the columns, non-null counts and data type.
+
+data['Wind Speed_km/h'].unique() #All unique values for wind speed.
+data['Weather'].unique()
+data[data.Weather == 'Clear'] #filter for data where the weather was clear.
+data.groupby('Weather').get_group('Clear') #Another method.
+data[data['Wind Speed_km/h']==4]
+data.isnull().sum() #Total null values for each column.
+data.notnull().sum()
+data.rename(columns = {'Weather':'Weather Condition'}, inplace = True) #Rename weather condition. Inplace makes it permanent.
+data.Visibility_km.mean()
+data.Press_kPa.std()
+data['Rel Hum_%'].var()
+data['Weather Condition'].value_counts()
+data[data['Weather Condition'] == 'Snow']
+data[data['Weather Condition'].str.contains('Snow')] #Multiple weather conditions in "Snow" in their name so find all these cases.
+data[(data['Wind Speed_km/h'] > 24) & (data['Visibility_km'] == 25)] #All cases for which the wind_speed is above 24 and visibility is 25.
+data.groupby('Weather Condition').mean() #Mean of all columns for each weather condition.
+data.groupby('Weather Condition').min()
+data.groupby('Weather Condition').max()
+data[data['Weather Condition'] == 'Fog'] 
+data.columns
+data[(data['Weather Condition'] == 'Clear') | (data['Visibility_km'] > 40)] #Cases when the weather condition is clear or the visibility is above 40.
+data[((data['Weather Condition'] == 'Clear') & data['Rel Hum_%'] >50)| (data['Visibility_km'] > 40)]
