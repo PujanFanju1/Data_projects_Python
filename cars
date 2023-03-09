@@ -1,0 +1,12 @@
+import pandas as pd
+car = pd.read_csv(r"C:\Users\44771\Desktop\CV\cars_data.csv") #working.
+#car.head()
+#car.shape
+
+car['Cylinders'].fillna(car['Cylinders'].mean(), inplace = True) #Fill each null value in cylinder with the mean cylinder value.
+car.isnull().sum()
+car.Make.value_counts() #count of each unique make.
+car[car.Origin.isin(['Asia','Europe'])] #Only pull data where origin is Asia or Europe.
+car[~(car.Weight > 4000)] #Remove all rows where the weight is above 4000.
+car.MPG_City = car.MPG_City.apply(lambda x:x+3) #Add 3 to the MPG_City column. 
+car.MPG_City
