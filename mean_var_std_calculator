@@ -1,0 +1,27 @@
+#Takes in a list of 9 numbers, turns it into a 3x3 matrix.
+#Calculates the mean, variance, std of each columns (axis=0) and row (axis=1) and flattened (just original list).
+#Puts each of the calculations in a dictionary.
+#If a list without 9 numbers is inputted into the function, it will display an error message.
+
+import numpy as np
+
+def calculate(list):
+    if len(list)!=9:
+        raise ValueError("List must contain nine numbers.")
+    arr = np.asarray(list).reshape(3,3)
+    #[row,column]
+    mean = [np.mean(arr,axis=0).tolist(),np.mean(arr,axis=1).tolist(),np.mean(list).tolist()]
+    variance = [np.var(arr,axis=0).tolist(),np.var(arr,axis=1).tolist(),np.var(list).tolist()]
+    std = [np.std(arr,axis=0).tolist(),np.std(arr,axis=1).tolist(),np.std(list).tolist()]
+    max = [np.max(arr,axis=0).tolist(),np.max(arr,axis=1).tolist(),np.max(list).tolist()]
+    min = [np.min(arr,axis=0).tolist(),np.min(arr,axis=1).tolist(),np.min(list).tolist()]
+    sum = [np.sum(arr,axis=0).tolist(),np.sum(arr,axis=1).tolist(),np.sum(list).tolist()]
+    calculations = {'mean': mean,
+                    'variance':variance,
+                    'standard deviation':std,
+                    'max':max,
+                    'min':min,
+                    'sum':sum}
+    return calculations
+
+print(mean_var_std.calculate([0,1,2,3,4,5,6,7,8]))
