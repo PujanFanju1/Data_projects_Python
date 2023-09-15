@@ -1,6 +1,15 @@
 import csv
-import random
+from abc import ABC, abstractmethod
 
+def load_books_from_csv():
+    books = []
+    with open("books.csv", mode='r', newline='') as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            book = Book(row['isbn'], row['title'], row['author'], row['description'])
+            books.append(book)
+    return books
+     
 class It:
     def __init__(self, li):
         self.li = li
@@ -17,47 +26,49 @@ class It:
         else:
             raise StopIteration
 
-books = []
-unregistered_basket = []
-login_dict = {}
-basket_dict = {}
-order_history = {}
-no_account = False
-login = False
-logged_in = False
-account_no = 101
-
-iterator = It(books)
-
-with open("books.csv", mode='r', newline='') as csv_file:
-    reader = csv.DictReader(csv_file)
-    for row in reader:
-        books.append(row)
-
-while True:
-
-    choice = int(input("\nView all books: 0\nSearch books: 1\nView basket/checkout: 2\nRegister: 3\nLogin: 4"))
-
-    if choice == 0:
-        for row in books:
-            print(f"ISBN: {row['isbn']}, Title: {row['title']}, Author: {row['author']}, Description: {row['description']}")
-
-        isbn_input = input("\nAdd book to basket: Enter isbn code\nContinue: Hit Enter\n")
-
-        while True:
-            try:
-                book = next(iterator)
-                if book['isbn'] == isbn_input:
-                    unregistered_basket.append((book['isbn'], book['title'], book['author']))
-                    print('Book added to basket\n')
-                    print("Basket:")
-                    for item in unregistered_basket:
-                        print(f"ISBN: {item[0]} Title: {item[1]}")
-            except StopIteration:
-                break
-
-    elif choice == 1:  # Changed 'if' to 'elif'
-        search = input("\nPlease enter the title of the book:\n")
+class Book:
+    def __init__(self, isbn, title, author, description):
+        self._isbn = isbn
+        self._title = title
+        self._author = author
+        self._description = description
+        
+    @property
+    def isbn(self):
+        return self._isbn
+    
+    @isbn.setter
+    def isbn(self,value):
+        self._isbn = value
+        
+    @property
+    def title(self):
+        return self._title
+    
+    @title.setter
+    def title(self,value):
+        self._title = value
+        
+    @property
+    def author(self):
+        return self._author
+    
+    @author.setter
+    def author(self,value):
+        self._author = value
+        
+    @property
+    def description(self):
+        return self._description
+    
+    @description.setter
+    def description(self,value):
+        self._description = value
+    
+    def __str__(self):
+        return f"isbn: {self.isbn} title: {self.title} author: {self.author} description: {self.description}"
+    
+    def search_book(search):
         print("\nResults:")
         iterator = It(books)
         found = False  # Initialize found to False
@@ -65,49 +76,152 @@ while True:
         while True:
             try:
                 book = next(iterator)
-                if search.lower() in book['title'].lower():
-                    print(f"ISBN: {book['isbn']}, Title: {book['title']}, Author: {book['author']}, Description: {book['description']}")
+                if search.lower() in book.title.lower():
+                    print(f"ISBN: {book.isbn}, Title: {book.title}, Author: {book.author}, Description: {book.description}")
                     found = True
             except StopIteration:
                 if not found:
                     print("Book not found")
                 break
 
-        isbn_input = input("\nAdd book to basket: Enter ISBN code\nContinue: Hit Enter\n")
 
+class ShoppingCart(ABC):
+    def __init__(self):
+        self.items = []
+
+    @abstractmethod
+    def add_item(self, unregistered_basket):
+        pass
+
+    @abstractmethod
+    def remove_item(self, isbn):
+        pass
+
+class UnregisteredShoppingCart(ShoppingCart):
+    def add_item(self, unregistered_basket, books):
+        iterator = It(books)
         while True:
             try:
                 book = next(iterator)
-                if book['isbn'] == isbn_input:
-                    unregistered_basket.append((book['isbn'], book['title'], book['author']))
-                    print('Book added to basket\n')
-                    print("Basket:")
-                    for item in unregistered_basket:
-                        print(f"ISBN: {item[0]} Title: {item[1]}")
+                if book.isbn == isbn_input:
+                    unregistered_basket.append((book.isbn, book.title, book.author))
             except StopIteration:
                 break
 
+    def remove_item(self, remove):
+        if remove == 'all':
+            unregistered_basket.clear()
+
+        for item in unregistered_basket:
+            if remove == item[0]:
+                unregistered_basket.remove(item)
+                
+class RegisteredShoppingCart(ShoppingCart):
+    def add_item(self, registered_basket, books):
+        iterator = It(books)
+        while True:
+            try:
+                book = next(iterator)
+                if book.isbn == isbn_input:
+                    registered_basket.append((book.isbn, book.title, book.author))
+            except StopIteration:
+                break
+
+    def remove_item(self, remove):
+        if remove == 'all':
+            basket_dict[key].clear()
+
+        for item in basket_dict[key]:
+            if remove == item[0]:
+                basket_dict[key].remove(item)
+                
+    def checkout(self,order_history,basket):
+        order_history[key].append(basket_dict[key][:])
+        basket_dict[key].clear()
+        print("\nPurchase successful!.\n")
+
+books = load_books_from_csv()
+unregistered_basket = []
+basket_dict = {}
+order_history = {}
+logged_in = False
+login_dict = {}
+account_no = 101
+valid_isbn = []
+
+unregistered_cart = UnregisteredShoppingCart()
+registered_cart = RegisteredShoppingCart()
+
+for book in books:
+    valid_isbn.append((book.isbn))
+    #print(book.isbn)
+
+class InvalidISBNError(Exception):
+    def __init__(self, isbn):
+        super().__init__(f"Book with ISBN- {isbn} does not exist.")
+        self.isbn = isbn
+        
+def validate_isbn(isbn,valid_isbn):
+    if isbn not in valid_isbn:
+        raise InvalidISBNError(isbn)
+
+while True:
+
+    while True:
+        try:
+            choice = int(input("\nView all books: 0\nSearch books: 1\nAdd items to basket: 2\nView/Modify basket and checkout: 3\nRegister: 4\nLogin: 5\n"))
+            break
+        except ValueError:
+            print("Please enter a valid integer value")
+
+    if choice == 0:
+        for book in books:
+            print(book)
+    
+    elif choice == 1:  
+        search = input("\nPlease enter the title of the book:\n")
+        Book.search_book(search)
+    
     elif choice == 2:
-        if unregistered_basket:
-            print('--------------------------')
-            print("\nShopping Basket:")
+        while True:
+            try:
+                isbn_input = (input("Please enter an isbn code"))
+                validate_isbn(isbn_input,valid_isbn)
+                print("Valid")
+                break
+            except InvalidISBNError as e:
+                print(f"Error: {e}")
+        
+        unregistered_cart.add_item(unregistered_basket,books)
+        print('Book added to basket\n')
+        print("Basket:")
+        for item in unregistered_basket:
+            print(f"ISBN: {item[0]} Title: {item[1]}")
+            
+    elif choice == 3:
+        print("\nCurrent basket:")
+        for item in unregistered_basket:
+            print(f"ISBN: {item[0]} Title: {item[1]}")
+            
+        basket_option = input("\nModify your basket: Type 'm':\nProceed to checkout: Type 'c'\nReturn to menu: Hit 'Enter'\n")
+        
+        if basket_option == 'm':
+            remove = input("\nTo remove an item: Type its ISBN code\nTo clear basket: type 'all'\n")
+            unregistered_cart.remove_item(remove)
+            
+            print("\nUpdated basket:")
             for item in unregistered_basket:
                 print(f"ISBN: {item[0]} Title: {item[1]}")
-            print('--------------------------')
-        
-            basket_option = input("\nModify your basket: Type 'm':\nProceed to checkout: Type 'c'\nReturn to menu: Hit 'Enter'\n")
+                
+        if basket_option == 'c':
+            checkout_choice = int(input('\nCreate account and proceed to checkout: 0\nLogin and proceed to checkout: 1\n'))
+            if checkout_choice == 0:  # Corrected to compare with string '1'
+                choice = 4
+                #break # Corrected to use string '3' as well
+            if checkout_choice == 1:
+                choice = 5
 
-            if basket_option == 'c':
-                checkout_choice = int(input('\nCreate account and proceed to checkout: 0\nLogin and proceed to checkout: 1\n'))
-                if checkout_choice == 0:  # Corrected to compare with string '1'
-                    choice = 3
-                    #break # Corrected to use string '3' as well
-                if checkout_choice == 1:
-                    choice = 4
-                    #break
-
-
-    while choice == 3:
+    while choice == 4:
         #account_no = random.randint(1, 100)
         print("Welcome to the registration page!")
         username_input = input("\nPlease enter a username:\n")
@@ -126,18 +240,13 @@ while True:
 
         account_no += 1
         print("Registration successful!")
-        #print(login_dict)
-        #print(basket_dict)
         print("Please now proceed to login with your details")
         print(login_dict)
         choice = 4
         break
-        #login = False
 
-
-    if choice == 4: 
+    if choice == 5: 
         while logged_in == False:
-            #print("Welcome to the login page!")
             username_input = input("\nPlease enter a username:\n")
             password_input = input("\nPlease enter a password:\n")
 
@@ -146,26 +255,18 @@ while True:
                     print('--------------------------')
                     print('Login successful')
                     print("Welcome to the bookstore")
-                    #print(f"Your account number is {key}.")
                     print('--------------------------')
                     logged_in = True
                     break
                 else:
                     print("\nYour username or password was incorrect, please try again:\n")
                     logged_in = False
-                #continue
-                #break
-            
         break
-
-        #if not logged_in:
-        #    print("\nYour username or password was incorrect, please try again or register a new account:\n")
-        #    login = False
-
+        
 while logged_in == True:
-
     print(f"Your account number is {account_no}.")
-    login_choice = (input("\nView/modify login details: 0\nView all books/Add to basket: 1\nSearch books: 2\nView basket/checkout: 3\nView order history: 4\nLog out: 5\n"))
+    
+    login_choice = (input("\nView/modify login details: 0\nView all books: 1\nSearch books: 2\nAdd book to basket: 3\nmodify basket/checkout: 4\nView order history: 5\nLog out: 6\n"))
     
     while login_choice == '0':
         print('\nHere are your up to date login details:')
@@ -177,96 +278,56 @@ while logged_in == True:
         else:
             modify_to = input("\nWhat would you like to change it to?\n")
             login_dict[key][ask_modify] = modify_to
-    
+            
     if login_choice == '1':
-        for row in books:
-            print(f"ISBN: {row['isbn']}, Title: {row['title']}, Author: {row['author']}, Description: {row['description']}")
-        
-        isbn_input = (input("\nAdd book to basket: Enter isbn code\nContinue: Hit Enter\n"))
-        iterator = It(books)
-        
-        while True:
-            try:
-                book = next(iterator)
-                if book['isbn']==isbn_input:
-                    basket_dict[key].append((book['isbn'], book['title'], book['author']))
-                    print('Book added to basket\n')
-                    print("Basket:")
-                    for item in basket_dict[key]:
-                        print(f"ISBN: {item[0]} Title: {item[1]}")
-            except StopIteration:
-                break
-
-    if login_choice == '2':
+        for book in books:
+            print(book)
+            
+    elif login_choice == '2':
         search = input("\nPlease enter the title of the book:\n")
-        print("\nResults:")
-        iterator = It(books)
-
+        Book.search_book(search)
+            
+    elif login_choice == '3':
         while True:
             try:
-                book = next(iterator) #Get the next book.
-                if search.lower() in book['title'].lower(): #When the user's search matches a book title, print out its information.
-                    print(f"ISBN: {book['isbn']}, Title: {book['title']}, Author: {book['author']}, Description: {book['description']}")
-                    found = True #Set found to True so that it doesn't print out "book not found".
-            except StopIteration: #If there are no more books, stop the iteration (logic written in It class).
-                if not found:
-                    print("Book not found")
-                break #Break out of the while loop.
-                
-        isbn_input = (input("\nAdd book to basket: Enter isbn code\nContinue: Hit Enter\n"))
-        iterator = It(books)
-        
-        while True:
-            try:
-                book = next(iterator)
-                if book['isbn']==isbn_input:
-                    basket_dict[key].append((book['isbn'], book['title'], book['author']))
-                    print('Book added to basket\n')
-                    print("Basket:")
-                    for item in basket_dict[key]:
-                        print(f"ISBN: {item[0]} Title: {item[1]}")
-            except StopIteration:
+                isbn_input = (input("Please enter an isbn code"))
+                validate_isbn(isbn_input,valid_isbn)
+                print("Valid")
                 break
-
-    if login_choice == '3':
-        print(basket_dict[key])
-        if basket_dict:
-            print('--------------------------')
-            print("\nShopping Basket:")
+            except InvalidISBNError as e:
+                print(f"Error: {e}")
+    
+        registered_cart.add_item(basket_dict[key],books)
+        print('Book added to basket\n')
+        print("Basket:")
+        for item in basket_dict[key]:
+            print(f"ISBN: {item[0]} Title: {item[1]}")
+            
+    elif login_choice == '4':
+        print("\nCurrent basket:")
+        for item in basket_dict[key]:
+            print(f"ISBN: {item[0]} Title: {item[1]}")
+            
+        basket_option = input("\nModify your basket: Type 'm':\nProceed to checkout: Type 'c'\nReturn to menu: Hit 'Enter'\n")
+        
+        if basket_option == 'm':
+            remove = input("\nTo remove an item: Type its ISBN code\nTo clear basket: type 'all'\n")
+            registered_cart.remove_item(remove)
             for item in basket_dict[key]:
                 print(f"ISBN: {item[0]} Title: {item[1]}")
-            print('--------------------------')
-        
-        basket_option = input("\nModify your basket: Type 'm':\nProceed to checkout: Type 'c'\nReturn to menu: Hit 'Enter\n")
-        print(order_history)
-        print(basket_dict)
-        
-        #Sort out order history/basket dict.
-        
-        
+                
         if basket_option == 'c':
             order_history[key].append(basket_dict[key][:])
             basket_dict[key].clear()
             print("\nPurchase successful!.\n")
-            print(order_history)
-            print(basket_dict)
-        
-        '''
-        if basket_option == 'm':
-            remove = input("\nTo remove an item: Type its ISBN code\nTo clear basket: type 'all'\n")
             
-            if remove == 'all':
-                basket_dict[key].clear()
-        '''
         
-    if login_choice == '4':
+    elif login_choice == '5':
         if order_history:
             print("\nOrder history:")
             for item in order_history[key]:
-                #print(f"ISBN: {item[0]} Title: {item[1]} Author: {item[2]}")
                 print(item)
             print('--------------------------')
             
-    if login_choice == '5':
-        logged_in = False
-        
+    elif login_choice == '6':
+        break
